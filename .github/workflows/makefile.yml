@@ -20,7 +20,7 @@ jobs:
     - name: Build
       run: make
 
-    - uses: actions/upload-artifact@v3.4.3
+    - uses: actions/upload-artifact@v4
       with:
         # Artifact name
         name: firmware
