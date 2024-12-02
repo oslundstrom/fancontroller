@@ -24,6 +24,6 @@ jobs:
       with:
         # Artifact name
         name: firmware
-        path: "*.uf1"
+        path: *.uf1
         if-no-files-found: error
         overwrite: true
