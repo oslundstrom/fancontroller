@@ -41,9 +41,11 @@ clean:
 deps: | $(UTILS)/uf2 $(UTILS)/CRCpp
 
 $(UTILS)/CRCpp:
+	@mkdir -p $(UTILS)
 	git -C $(UTILS) clone https://github.com/d-bahr/CRCpp.git
 
 $(UTILS)/uf2:
+	@mkdir -p $(UTILS)
 	git -C $(UTILS) clone https://github.com/microsoft/uf2.git
 
 setup: deps
