@@ -1,39 +1,51 @@
-.PHONY: setup all
+# Source code files
+BOOT2 = boot2Blinky
+COMPCRC = compCrc32
+CRCVALUE = crc
 
-all: boot2Blinky_temp.bin boot2Blinky.bin
-	
-boot2Blinky.uf2:
-	python3 ./uf2/utils/uf2conv.py -b 0x10000000 -f 0xe48bff56 -c boot2Blinky.bin -o boot2Blinky.uf2
-	
-boot2Blinky.bin: boot2Blinky.elf
-	arm-none-eabi-objcopy -O binary boot2Blinky.elf boot2Blinky.bin
+# Directory to create temporary build files in
+BUILDDIR = build
 
-boot2Blinky.elf: link.ld boot2Blinky.c crc.c
-	arm-none-eabi-gcc boot2Blinky.c crc.c -mcpu=cortex-m0plus -T link.ld -nostdlib -o boot2Blinky.elf
+# Compilation related variables
+TOOLCHAIN = arm-none-eabi-
+CFLAGS ?= -mcpu=cortex-m0plus -O3
+LDFLAGS ?= -T link.ld -nostdlib -O3
 
-boot2Blinky_temp.o: boot2Blinky.c
-	arm-none-eabi-gcc boot2Blinky.c -mcpu=cortex-m0plus -c -o boot2Blinky_temp.o
-	
-boot2Blinky_temp.elf: boot2Blinky_temp.o link.ld
-	arm-none-eabi-ld boot2Blinky_temp.o -T link_temp.ld -nostdlib -o boot2Blinky_temp.elf
+# Utilities path
+UTILS = utils
 
-boot2Blinky_temp.bin: boot2Blinky_temp.elf
-	arm-none-eabi-objcopy -O binary boot2Blinky_temp.elf boot2Blinky_temp.bin
+build: makeDir $(BUILDDIR)/$(BOOT2).bin $(BUILDDIR)/$(BOOT2).uf2 copyUF2
 
-crc.c: compCrc32.out boot2Blinky_temp.bin
-	./compCrc32.out boot2Blinky_temp.bin
+makeDir:
+	mkdir -p $(BUILDDIR)
 
-compCrc32.out:
-	g++ compCrc32.cpp -o compCrc32.out
+$(BUILDDIR)/$(BOOT2).bin: $(BOOT2).c
+	$(TOOLCHAIN)gcc $(CFLAGS) $(BOOT2).c -c -o $(BUILDDIR)/$(BOOT2)_temp.o
+	$(TOOLCHAIN)objdump -hSD $(BUILDDIR)/$(BOOT2)_temp.o > $(BUILDDIR)/$(BOOT2)_temp.objdump
+	$(TOOLCHAIN)objcopy -O binary $(BUILDDIR)/$(BOOT2)_temp.o $(BUILDDIR)/$(BOOT2)_temp.bin
+	g++ -I $(UTILS) $(COMPCRC).cpp -o $(BUILDDIR)/$(COMPCRC).out
+	./$(BUILDDIR)/$(COMPCRC).out $(BUILDDIR)/$(BOOT2)_temp.bin
+	$(TOOLCHAIN)gcc $(BOOT2).c $(BUILDDIR)/$(CRCVALUE).c $(CFLAGS) $(LDFLAGS) -o $(BUILDDIR)/$(BOOT2).elf
+	$(TOOLCHAIN)objdump -hSD $(BUILDDIR)/$(BOOT2).elf > $(BUILDDIR)/$(BOOT2).objdump
+	$(TOOLCHAIN)objcopy -O binary $(BUILDDIR)/$(BOOT2).elf $@
 
-deps: | uf2 $ CRCpp
+$(BUILDDIR)/$(BOOT2).uf2: $(BUILDDIR)/$(BOOT2).bin
+	python3 $(UTILS)/uf2/utils/uf2conv.py -b 0x10000000 -f 0xe48bff56 -c $(BUILDDIR)/$(BOOT2).bin -o $@
+
+copyUF2: $(BUILDDIR)/$(BOOT2).uf2
+	cp $(BUILDDIR)/$(BOOT2).uf2 ./$(BOOT2).uf2
+
+clean:
+	rm -rf $(BUILDDIR) $(BOOT2).uf2
+
+deps: | $(UTILS)/uf2 $(UTILS)/CRCpp
 
 CRCpp:
-	git clone https://github.com/d-bahr/CRCpp.git
+	git -C $(UTILS) clone https://github.com/d-bahr/CRCpp.git
 
 uf2:
-	git clone https://github.com/microsoft/uf2.git
+	git -C $(UTILS) clone https://github.com/microsoft/uf2.git
 
-setup:
+setup: deps
 	sudo apt update
 	sudo apt install make gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential g++ libstdc++-arm-none-eabi-newlib
