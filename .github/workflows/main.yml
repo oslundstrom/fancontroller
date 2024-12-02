@@ -6,12 +6,13 @@ on:
   pull_request:
     branches: [ "main" ]
 
-steps:
-- uses: actions/upload-artifact@v4.4.3
-  with:
-    # Artifact name
-    name: firmware
-    path: "*.uf2"
-    if-no-files-found: error
-    overwrite: true
+jobs:
+  upload:
+  - uses: actions/upload-artifact@v4.4.3
+    with:
+      # Artifact name
+      name: firmware
+      path: "*.uf2"
+      if-no-files-found: error
+      overwrite: true
           
