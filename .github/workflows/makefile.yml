@@ -1,4 +1,4 @@
-name: Makefile CI
+name: Build and upload artifact
 
 on:
   push:
@@ -17,5 +17,13 @@ jobs:
     - name: Install dependencies
       run: make setup
 
-    - name: Run check
+    - name: Build
       run: make
+
+    - uses: actions/upload-artifact@v3.4.3
+      with:
+        # Artifact name
+        name: firmware
+        path: "*.uf1"
+        if-no-files-found: error
+        overwrite: true
