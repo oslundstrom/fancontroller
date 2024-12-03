@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include "hardware/pio.h"
 
 // Define necessary register addresses
 #define RESETS_RESET *(volatile uint32_t *) (0x4000c000)
