@@ -55,6 +55,8 @@ LDFLAGS ?= -T link.ld -nostdlib -O3
 # Utilities path
 UTILS = utils
 
+PIOASM = $(SDK_PATH)/tools/pioasm/pioasm
+
 build: makeDir $(BUILDDIR)/$(BOOT2).bin $(BUILDDIR)/$(BOOT2).uf2 copyUF2
 
 makeDir:
@@ -69,7 +71,14 @@ $(BUILDDIR)/$(BOOT2).bin: $(BOOT2).c $(INCLUDE)/pico/version.h $(INCLUDE)/pico_c
 	$(TOOLCHAIN)gcc $(BOOT2).c $(BUILDDIR)/$(CRCVALUE).c $(CFLAGS) $(LDFLAGS) -o $(BUILDDIR)/$(BOOT2).elf
 	$(TOOLCHAIN)objdump -hSD $(BUILDDIR)/$(BOOT2).elf > $(BUILDDIR)/$(BOOT2).objdump
 	$(TOOLCHAIN)objcopy -O binary $(BUILDDIR)/$(BOOT2).elf $@
-	
+
+$(BUILDDIR)/pwm.h: pwm.pio $(PIOASM)
+	$(PIOASM) $< $@
+
+$(PIOASM):
+	cmake $(shell dirname $(PIOASM))
+	make -C $(shell dirname $(PIOASM))
+
 %_headers.h:
 	mkdir -p $(shell dirname $@)
 	touch $@
@@ -105,4 +114,4 @@ $(SDK_PATH):
 
 setup: deps
 	sudo apt update
-	sudo apt install make gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential g++ libstdc++-arm-none-eabi-newlib
+	sudo apt install make cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential g++ libstdc++-arm-none-eabi-newlib
