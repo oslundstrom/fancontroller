@@ -13,9 +13,18 @@
 #define SIO_GPIO_OE_SET *(volatile uint32_t *) (0xd0000024)
 #define SIO_GPIO_OUT_XOR *(volatile uint32_t *) (0xd000001c)
 
+#define PWM_PIN 0
+
 // Main entry point
 __attribute__((section(".boot2"))) void bootStage2(void)
 {
+    // Load the pwm program into PIO instruction memory
+    PIO pio = pio0;
+    uint offset = pio_add_program(pio, &pwm_program);
+    pwm_program_init(pio, 0, offset, PWM_PIN);
+
+
+
     // Bring IO_BANK0 out of reset state
     RESETS_RESET &= ~(1 << 5);
 

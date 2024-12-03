@@ -5,14 +5,35 @@ CRCVALUE = crc
 
 # Directory to create temporary build files in
 BUILDDIR = build
-
+#
 # Path to the SDK parts we need
 SDK_PATH = pico-sdk
+
+# SRC Files
+# pico-sdk/src/rp2_common/hardware_pio/pio.c
+SRCS = \
+	$(SDK_PATH)/src/rp2_common/hardware_pio/pio.c \
+	$(SDK_PATH)/src/rp2_common/hardware_gpio/gpio.c \
+	$(SDK_PATH)/src/common/hardware_claim/claim.c \
+	$(SDK_PATH)/src/rp2_common/hardware_irq/irq.c \
+	$(SDK_PATH)/src/rp2_common/pico_clib_interface/newlib_interface.c \
+	$(SDK_PATH)/src/rp2_common/pico_bit_ops/bit_ops_aeabi.S
+
+OBJS = $(SRCS:.c=.o)
+
 BASE_INCLUDE = $(SDK_PATH)/src/rp2_common/hardware_base/include
 PIO_INCLUDE = $(SDK_PATH)/src/rp2_common/hardware_pio/include
 GPIO_INCLUDE = $(SDK_PATH)/src/rp2_common/hardware_gpio/include
 IRQ_INCLUDE = $(SDK_PATH)/src/rp2_common/hardware_irq/include
+SYNC_INCLUDE = $(SDK_PATH)/src/rp2_common/hardware_sync/include
+TIMER_INCLUDE = $(SDK_PATH)/src/rp2_common/hardware_timer/include
+PICO_TIME_INCLUDE = $(SDK_PATH)/src/common/pico_time/include
+PICO_SYNC_INCLUDE = $(SDK_PATH)/src/common/pico_sync/include
+PICO_RUNTIME_INIT_INCLUDE = $(SDK_PATH)/src/rp2_common/pico_runtime_init/include
+PICO_RUNTIME_INCLUDE = $(SDK_PATH)/src/rp2_common/pico_runtime/include
+SYNC_SPIN_LOCK_INCLUDE = $(SDK_PATH)/src/rp2_common/hardware_sync_spin_lock/include
 REGS_INCLUDE = $(SDK_PATH)/src/rp2040/hardware_regs/include
+CLAIM_INCLUDE = $(SDK_PATH)/src/common/hardware_claim/include
 PICO_INCLUDE = $(SDK_PATH)/src/common/pico_base_headers/include
 PICO_PLATFORM_INCLUDE = $(SDK_PATH)/src/rp2040/pico_platform/include
 PICO_PLATFORM_COMPILER_INCLUDE = $(SDK_PATH)/src/rp2_common/pico_platform_compiler/include
@@ -31,6 +52,7 @@ INCLUDE = include
 # Compilation related variables
 TOOLCHAIN = arm-none-eabi-
 CFLAGS ?= -mcpu=cortex-m0plus -O3 \
+		  -c \
 		 -nostartfiles \
 		 -mthumb \
 		 -DPICO_RP2040=1 \
@@ -38,7 +60,15 @@ CFLAGS ?= -mcpu=cortex-m0plus -O3 \
          -I$(PIO_INCLUDE) \
          -I$(GPIO_INCLUDE) \
          -I$(IRQ_INCLUDE) \
+         -I$(SYNC_INCLUDE) \
+         -I$(TIMER_INCLUDE) \
+         -I$(PICO_TIME_INCLUDE) \
+         -I$(PICO_SYNC_INCLUDE) \
+         -I$(PICO_RUNTIME_INIT_INCLUDE) \
+         -I$(PICO_RUNTIME_INCLUDE) \
+         -I$(SYNC_SPIN_LOCK_INCLUDE) \
          -I$(REGS_INCLUDE) \
+         -I$(CLAIM_INCLUDE) \
          -I$(PICO_INCLUDE) \
          -I$(PICO_PLATFORM_INCLUDE) \
          -I$(PICO_PLATFORM_COMPILER_INCLUDE) \
@@ -50,7 +80,8 @@ CFLAGS ?= -mcpu=cortex-m0plus -O3 \
          -I$(RP2350_HW_REGS_INCLUDE) \
          -I$(BAZEL_INCLUDE) \
          -I$(INCLUDE)
-LDFLAGS ?= -T link.ld -nostdlib -O3
+
+LDFLAGS ?= -T link.ld  -nostdlib -O3
 
 # Utilities path
 UTILS = utils
@@ -65,15 +96,25 @@ makeDir:
 $(BUILDDIR)/$(BOOT2).bin: $(BOOT2).c $(INCLUDE)/pico/version.h \
 		$(INCLUDE)/pico_config_platform_headers.h \
 		$(INCLUDE)/pico_config_extra_headers.h \
-		$(BUILDDIR)/pwm.h
+		$(BUILDDIR)/pwm.h \
+		objs
 	$(TOOLCHAIN)gcc $(CFLAGS) $(BOOT2).c -c -o $(BUILDDIR)/$(BOOT2)_temp.o
 	$(TOOLCHAIN)objdump -hSD $(BUILDDIR)/$(BOOT2)_temp.o > $(BUILDDIR)/$(BOOT2)_temp.objdump
 	$(TOOLCHAIN)objcopy -O binary $(BUILDDIR)/$(BOOT2)_temp.o $(BUILDDIR)/$(BOOT2)_temp.bin
 	g++ -I $(UTILS) $(COMPCRC).cpp -o $(BUILDDIR)/$(COMPCRC).out
 	./$(BUILDDIR)/$(COMPCRC).out $(BUILDDIR)/$(BOOT2)_temp.bin
-	$(TOOLCHAIN)gcc $(BOOT2).c $(BUILDDIR)/$(CRCVALUE).c $(CFLAGS) $(LDFLAGS) -o $(BUILDDIR)/$(BOOT2).elf
+	$(TOOLCHAIN)gcc $(BOOT2).c $(CFLAGS) -o $(BUILDDIR)/$(BOOT2).o
+	$(TOOLCHAIN)gcc $(BUILDDIR)/$(CRCVALUE).c $(CFLAGS) -o $(BUILDDIR)/$(CRCVALUE).o
+	$(TOOLCHAIN)ld $(LDFLAGS) $(BUILDDIR)/$(BOOT2).o $(OBJS) -o $(BUILDDIR)/$(BOOT2).elf
 	$(TOOLCHAIN)objdump -hSD $(BUILDDIR)/$(BOOT2).elf > $(BUILDDIR)/$(BOOT2).objdump
 	$(TOOLCHAIN)objcopy -O binary $(BUILDDIR)/$(BOOT2).elf $@
+	
+.PHONY: objs
+objs: $(OBJS)
+	
+%.o: %.c
+	mkdir -p $(shell dirname $@)
+	$(TOOLCHAIN)gcc $(CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/pwm.h: pwm.pio $(PIOASM)
 	$(PIOASM) $< $@
