@@ -62,7 +62,10 @@ build: makeDir $(BUILDDIR)/$(BOOT2).bin $(BUILDDIR)/$(BOOT2).uf2 copyUF2
 makeDir:
 	mkdir -p $(BUILDDIR)
 
-$(BUILDDIR)/$(BOOT2).bin: $(BOOT2).c $(INCLUDE)/pico/version.h $(INCLUDE)/pico_config_platform_headers.h $(INCLUDE)/pico_config_extra_headers.h
+$(BUILDDIR)/$(BOOT2).bin: $(BOOT2).c $(INCLUDE)/pico/version.h \
+		$(INCLUDE)/pico_config_platform_headers.h \
+		$(INCLUDE)/pico_config_extra_headers.h \
+		$(BUILDDIR)/pwm.h
 	$(TOOLCHAIN)gcc $(CFLAGS) $(BOOT2).c -c -o $(BUILDDIR)/$(BOOT2)_temp.o
 	$(TOOLCHAIN)objdump -hSD $(BUILDDIR)/$(BOOT2)_temp.o > $(BUILDDIR)/$(BOOT2)_temp.objdump
 	$(TOOLCHAIN)objcopy -O binary $(BUILDDIR)/$(BOOT2)_temp.o $(BUILDDIR)/$(BOOT2)_temp.bin

@@ -4,6 +4,7 @@
 #include "hardware/regs/addressmap.h"
 #include "hardware/regs/pio.h"
 #include "hardware/platform_defs.h"
+#include "build/pwm.h"
 
 // Define necessary register addresses
 #define RESETS_RESET *(volatile uint32_t *) (0x4000c000)
