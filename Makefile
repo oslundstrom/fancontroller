@@ -19,7 +19,7 @@ build: makeDir $(BUILDDIR)/$(BOOT2).bin $(BUILDDIR)/$(BOOT2).uf2 copyUF2
 makeDir:
 	mkdir -p $(BUILDDIR)
 
-$(BUILDDIR)/$(BOOT2).bin: $(BOOT2).c
+$(BUILDDIR)/$(BOOT2).bin: $(BOOT2).c | $(UTILS)/uf2 $(UTILS)/CRCpp
 	$(TOOLCHAIN)gcc $(CFLAGS) $(BOOT2).c -c -o $(BUILDDIR)/$(BOOT2)_temp.o
 	$(TOOLCHAIN)objdump -hSD $(BUILDDIR)/$(BOOT2)_temp.o > $(BUILDDIR)/$(BOOT2)_temp.objdump
 	$(TOOLCHAIN)objcopy -O binary $(BUILDDIR)/$(BOOT2)_temp.o $(BUILDDIR)/$(BOOT2)_temp.bin
@@ -35,8 +35,14 @@ $(BUILDDIR)/$(BOOT2).uf2: $(BUILDDIR)/$(BOOT2).bin
 copyUF2: $(BUILDDIR)/$(BOOT2).uf2
 	cp $(BUILDDIR)/$(BOOT2).uf2 ./$(BOOT2).uf2
 
-clean:
+deploy: build
+	sudo openocd -f ../openocd/tcl/interface/cmsis-dap.cfg -f ../openocd/tcl/target/rp2040.cfg -c "adapter speed 5000" -c "program $(BUILDDIR)/$(BOOT2).elf"
+
+mostlyclean:
 	rm -rf $(BUILDDIR) $(BOOT2).uf2
+
+clean: mostlyclean
+	rm -rf $(UTILS)/uf2 $(UTILS)/CRCpp
 
 deps: | $(UTILS)/uf2 $(UTILS)/CRCpp
 
