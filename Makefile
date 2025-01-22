@@ -36,7 +36,7 @@ copyUF2: $(BUILDDIR)/$(BOOT2).uf2
 	cp $(BUILDDIR)/$(BOOT2).uf2 ./$(BOOT2).uf2
 
 deploy: build
-	sudo openocd -f ../openocd/tcl/interface/cmsis-dap.cfg -f ../openocd/tcl/target/rp2040.cfg -c "adapter speed 5000" -c "program $(BUILDDIR)/$(BOOT2).elf"
+	sudo openocd -f ../openocd/tcl/interface/cmsis-dap.cfg -f ../openocd/tcl/target/rp2040.cfg -c "adapter speed 5000" -c "program $(BUILDDIR)/$(BOOT2).elf verify reset" -c "reset" -c "exit"
 
 mostlyclean:
 	rm -rf $(BUILDDIR) $(BOOT2).uf2
