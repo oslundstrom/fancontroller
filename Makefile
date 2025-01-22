@@ -1,5 +1,5 @@
 # Source code files
-BOOT2 = boot2Blinky
+BOOT2 = boot2
 COMPCRC = compCrc32
 CRCVALUE = crc
 

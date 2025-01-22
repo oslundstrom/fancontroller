@@ -1,4 +1,4 @@
-ENTRY(bootStage2);
+ENTRY(boot2);
 
 MEMORY
 {
